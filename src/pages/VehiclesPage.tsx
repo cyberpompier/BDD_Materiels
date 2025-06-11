@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { ItemCard } from '@/components/item-card';
 import { Engin, Materiel, supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,15 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea'; // Importez Textarea
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress'; // Import the Progress component
 
 export function VehiclesPage() {
   const [engins, setEngins] = useState<Engin[]>([]);
@@ -22,6 +30,10 @@ export function VehiclesPage() {
   const [loadingMateriels, setLoadingMateriels] = useState(false);
   const [materielsError, setMaterielsError] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(false);
+
+  // États pour le filtre d'emplacement
+  const [selectedEmplacement, setSelectedEmplacement] = useState<string>('all');
+  const [emplacements, setEmplacements] = useState<string[]>([]);
 
   // États pour le formulaire d'ajout d'engin
   const [isAddEnginDialogOpen, setIsAddEnginDialogOpen] = useState(false);
@@ -61,6 +73,7 @@ export function VehiclesPage() {
     setLoadingMateriels(true);
     setMaterielsError(null);
     setAssociatedMateriels([]);
+    setSelectedEmplacement('all'); // Réinitialiser le filtre d'emplacement
 
     try {
       const { data, error: fetchError } = await supabase
@@ -78,6 +91,11 @@ export function VehiclesPage() {
       }));
 
       setAssociatedMateriels(materialsWithEnginName || []);
+
+      // Extraire les emplacements uniques pour le filtre
+      const uniqueEmplacements = Array.from(new Set(materialsWithEnginName.map(m => m.emplacement)));
+      setEmplacements(uniqueEmplacements);
+
     } catch (err: any) {
       setMaterielsError(err.message);
     } finally {
@@ -85,10 +103,22 @@ export function VehiclesPage() {
     }
   };
 
+  // Nouvelle fonction pour gérer la mise à jour d'un matériel depuis ItemCard
+  const handleMaterielUpdate = (id: string, updatedFields: { comment?: string; quantite_reelle?: number; is_controlled?: boolean }) => {
+    setAssociatedMateriels(prevMateriels =>
+      prevMateriels.map(materiel =>
+        materiel.id === id
+          ? { ...materiel, ...updatedFields }
+          : materiel
+      )
+    );
+  };
+
   const handleBackToList = () => {
     setSelectedEngin(null);
     setShowDetails(false);
     setAssociatedMateriels([]);
+    setEmplacements([]); // Vider les emplacements quand on revient à la liste des engins
   };
 
   const handleAddEngin = async () => {
@@ -130,9 +160,26 @@ export function VehiclesPage() {
     }
   };
 
+  // Filtrer les matériels en fonction de l'emplacement sélectionné
+  const filteredMateriels = useMemo(() => {
+    if (selectedEmplacement === 'all') {
+      return associatedMateriels;
+    }
+    return associatedMateriels.filter(materiel => materiel.emplacement === selectedEmplacement);
+  }, [associatedMateriels, selectedEmplacement]);
+
+  // Calculer la progression des matériels contrôlés
+  const controlledMaterielsCount = useMemo(() => {
+    return filteredMateriels.filter(materiel => materiel.is_controlled).length;
+  }, [filteredMateriels]);
+
+  const totalMaterielsCount = filteredMateriels.length;
+  const progressValue = totalMaterielsCount > 0 ? (controlledMaterielsCount / totalMaterielsCount) * 100 : 0;
+
+
   return (
     <main className="container mx-auto p-6">
-      <h2 className="text-3xl font-bold text-center mb-8">Nos Engins</h2>
+      <h2 className="text-3xl font-bold text-center mb-8">Ma Remise</h2>
 
       {!showDetails ? (
         <>
@@ -172,14 +219,45 @@ export function VehiclesPage() {
             <p className="text-lg mb-6"><strong>Affectation:</strong> {selectedEngin.cs_affectation}</p>
 
             <h4 className="text-xl font-semibold mt-8 mb-4">Matériels Associés</h4>
+            {emplacements.length > 0 && (
+              <div className="mb-4 flex items-center gap-2">
+                <Label htmlFor="emplacement-filter" className="text-right">
+                  Filtrer par emplacement:
+                </Label>
+                <Select onValueChange={setSelectedEmplacement} value={selectedEmplacement}>
+                  <SelectTrigger id="emplacement-filter" className="w-[180px]">
+                    <SelectValue placeholder="Sélectionner un emplacement" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les emplacements</SelectItem>
+                    {emplacements.map((emplacement) => (
+                      <SelectItem key={emplacement} value={emplacement}>
+                        {emplacement}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Barre de progression */}
+            {totalMaterielsCount > 0 && (
+              <div className="mb-6">
+                <p className="text-sm text-muted-foreground mb-2">
+                  {controlledMaterielsCount} / {totalMaterielsCount} matériels contrôlés
+                </p>
+                <Progress value={progressValue} />
+              </div>
+            )}
+
             {loadingMateriels && <p className="text-center">Chargement des matériels...</p>}
             {materielsError && <p className="text-center text-destructive">Erreur lors du chargement des matériels : {materielsError}</p>}
-            {!loadingMateriels && !materielsError && associatedMateriels.length === 0 && (
-              <p className="text-center text-muted-foreground">Aucun matériel associé à cet engin.</p>
+            {!loadingMateriels && !materielsError && filteredMateriels.length === 0 && (
+              <p className="text-center text-muted-foreground">Aucun matériel associé à cet engin ou ne correspond au filtre.</p>
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {associatedMateriels.map((material) => (
-                <ItemCard key={material.id} item={material} />
+              {filteredMateriels.map((material) => (
+                <ItemCard key={material.id} item={material} onUpdate={handleMaterielUpdate} />
               ))}
             </div>
           </div>

@@ -20,7 +20,8 @@ export interface Materiel {
   name: string;
   description: string;
   photo_url: string;
-  quantite: number;
+  quantite_reelle?: number; // Renommé de 'quantite'
+  quantite_nominale?: number; // Nouvelle colonne
   emplacement: string;
   etat: string;
   created_at: string;
@@ -29,6 +30,8 @@ export interface Materiel {
   doc?: string | null; // New column
   media?: string | null; // New column
   affectation?: string | null; // NEW: Add affectation column
+  comment?: string | null; // NEW: Add comment column
+  is_controlled?: boolean; // NEW: Add is_controlled column
 }
 
 export interface Engin {

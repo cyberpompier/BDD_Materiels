@@ -29,6 +29,19 @@ const AFFECTATION_OPTIONS = [
   "Autres" // Option pour les affectations non listées
 ];
 
+// Définir les options de grade
+const GRADE_OPTIONS = [
+  "SAP",
+  "CPL",
+  "CCH",
+  "SGT",
+  "SCH",
+  "ADJ",
+  "ADC",
+  "LNT",
+  "CNE"
+];
+
 export function ProfilePage() {
   const [profile, setProfile] = useState<Personnel | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,10 +88,10 @@ export function ProfilePage() {
     });
   };
 
-  const handleSelectChange = (value: string) => {
+  const handleSelectChange = (value: string, field: 'affectation' | 'grade') => {
     setProfile((prevProfile) => {
       if (!prevProfile) return null;
-      return { ...prevProfile, affectation: value };
+      return { ...prevProfile, [field]: value };
     });
   };
 
@@ -191,19 +204,27 @@ export function ProfilePage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="grade">Grade</Label>
-              <Input
-                id="grade"
-                type="text"
+              <Select
+                onValueChange={(value) => handleSelectChange(value, 'grade')}
                 value={profile.grade || ''}
-                onChange={handleChange}
-                required
                 disabled={isUpdating}
-              />
+              >
+                <SelectTrigger id="grade">
+                  <SelectValue placeholder="Sélectionner un grade" />
+                </SelectTrigger>
+                <SelectContent>
+                  {GRADE_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="affectation">Affectation</Label>
               <Select
-                onValueChange={handleSelectChange}
+                onValueChange={(value) => handleSelectChange(value, 'affectation')}
                 value={profile.affectation || ''}
                 disabled={isUpdating}
               >
