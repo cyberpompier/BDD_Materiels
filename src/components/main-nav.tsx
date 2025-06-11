@@ -101,7 +101,7 @@ export function MainNav({ session }: MainNavProps) {
 
   return (
     <nav className="flex items-center justify-between p-4 border-b bg-card text-card-foreground">
-      <h1 className="text-2xl font-bold">Ma Galerie</h1>
+      {/* Removed h1 "Ma Galerie" */}
       <div className="flex items-center space-x-4">
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-4">
