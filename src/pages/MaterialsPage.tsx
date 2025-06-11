@@ -68,7 +68,8 @@ export function MaterialsPage() {
       if (fetchError) {
         throw fetchError;
       }
-      setEngins(data || []);
+      // Assurez-vous que les données correspondent au type Engin (avec les champs optionnels)
+      setEngins(data as Engin[] || []);
     } catch (err: any) {
       console.error('Erreur lors du chargement des engins:', err.message);
     }
@@ -79,7 +80,7 @@ export function MaterialsPage() {
     fetchEngins();
   }, []);
 
-  const handleMaterielUpdate = (id: string, updatedFields: { comment?: string; quantite_nominale?: number }) => {
+  const handleMaterielUpdate = (id: string, updatedFields: { comment?: string; quantite_reelle?: number }) => {
     setMateriels(prevMateriels =>
       prevMateriels.map(materiel =>
         materiel.id === id
