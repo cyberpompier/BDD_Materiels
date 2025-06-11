@@ -12,7 +12,7 @@ export function LandingPage({ onFinish }: LandingPageProps) {
     const timer = setTimeout(() => {
       onFinish(); // Notify App.tsx that landing page is done
       navigate('/'); // Navigate to the home page
-    }, 5000); // 5 seconds
+    }, 10000); // 5 seconds
 
     return () => clearTimeout(timer); // Clean up the timer
   }, [onFinish, navigate]);
